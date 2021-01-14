@@ -2805,6 +2805,7 @@ int fg_age_detection(struct fg_chip *chip)
 	}
 	return age;
 }
+
 int fg_age_ratio(struct fg_chip *chip)
 {
 	int full_cap, design_cap;
@@ -2828,6 +2829,22 @@ int fg_age_ratio(struct fg_chip *chip)
 	}
 
 	return age_ratio;
+}
+
+int fg_age_detection_level(struct fg_chip *chip)
+{
+	int age_level = 0;
+
+	age_level = fg_age_detection(chip);
+
+	if(age_level == 1)
+		age_level = 100;
+	else if(age_level == 2)
+		age_level = 80;
+	else
+		age_level = 49;
+
+	return age_level;
 }
 #endif
 
@@ -3239,8 +3256,10 @@ out:
 #define CHECK_VOLTAGE_COUNT 12
 #define VINT_ERR_FOR_FG_RESET 12
 #define CHECK_VINT_ERR_COUNT 12
-#endif
+#define SANITY_CHECK_PERIOD_MS	10000
+#else
 #define SANITY_CHECK_PERIOD_MS	5000
+#endif
 static void check_sanity_work(struct work_struct *work)
 {
 	struct fg_chip *chip = container_of(work,
@@ -5822,6 +5841,7 @@ static enum power_supply_property fg_power_props[] = {
 #ifdef CONFIG_LGE_PM_FG_AGE
 	POWER_SUPPLY_PROP_BATTERY_CONDITION,
 	POWER_SUPPLY_PROP_BATTERY_AGE,
+	POWER_SUPPLY_PROP_BATTERY_AGE_LEVEL,
 #endif
 };
 
@@ -5955,6 +5975,9 @@ static int fg_power_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_BATTERY_AGE:
 		val->intval = fg_age_ratio(chip);
+		break;
+	case POWER_SUPPLY_PROP_BATTERY_AGE_LEVEL:
+		val->intval = fg_age_detection_level(chip);
 		break;
 #endif
 	default:

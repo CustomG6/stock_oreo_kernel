@@ -841,6 +841,7 @@ static bool tcpm_is_cc_swing(unsigned int port)
 	tcpc_device_t *dev = tcpm_get_device(port);
 	uint8_t cc_status;
 	unsigned int cc1, cc2;
+	int sbu_adc;
 
 #ifdef CONFIG_LGE_USB_COMPLIANCE_TEST
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
@@ -864,12 +865,13 @@ static bool tcpm_is_cc_swing(unsigned int port)
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
 	DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
+if (!(dev->moisture_detect_use_sbu)) {
 	if (dev->state != TCPC_STATE_CC_FAULT_SWING &&
 	    dev->cc_status == dev->last_cc_status)
 	{
 		goto out;
 	}
-
+}
 	if (dev->state == TCPC_STATE_ATTACHED_SNK)
 	{
 		cc1 = TCPC_CC1_STATE(dev->cc_status);
@@ -917,6 +919,34 @@ static bool tcpm_is_cc_swing(unsigned int port)
 
 		if (dev->cc_swing_cnt > CC_SWING_THRESHOLD)
 		{
+			if (dev->moisture_detect_use_sbu) {
+				// Mask cc status alert.
+				tcpc_modify16(port, TCPC_REG_ALERT_MASK, TCPC_ALERT_CC_STATUS, 0);
+
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
+				edge_adc = usb_pd_pal_get_edge_adc(port);
+#endif
+				tcpc_write8(port, TCPC_REG_ROLE_CTRL, tcpc_reg_role_ctrl_set(false, dev->rp_val, CC_OPEN, CC_OPEN));
+				usleep_range(500, 1000);
+				sbu_adc = usb_pd_pal_get_sbu_adc(port);
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECT_EDGE
+				if (sbu_adc < SBU_DRY_THRESHOLD_MIN || sbu_adc > SBU_DRY_THRESHOLD_MAX ||
+						(edge_adc > 0 && edge_adc < EDGE_WET_THRESHOLD_MAX)) {
+#else
+				if (sbu_adc < SBU_DRY_THRESHOLD_MIN || sbu_adc > SBU_DRY_THRESHOLD_MAX) {
+#endif
+					dev->cc_swing_cnt = 0;// reset cc_swing_cnt
+					tcpm_set_state(dev, TCPC_STATE_UNATTACHED_SNK);
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+					dual_role_instance_changed(tusb422_dual_role_phy);
+#endif
+					tcpm_connection_state_machine(port);
+					TCPC_POLLING_DELAY();
+
+					PRINT("%s adc was not met, don't enter moisture detection\n",__func__);
+					goto out;
+				}
+			}
 			// Mask cc status alert.
 			tcpc_modify16(port, TCPC_REG_ALERT_MASK, TCPC_ALERT_CC_STATUS, 0);
 

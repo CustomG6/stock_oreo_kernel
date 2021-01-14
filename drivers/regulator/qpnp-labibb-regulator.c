@@ -27,6 +27,10 @@
 #include <linux/regulator/of_regulator.h>
 #include <linux/qpnp/qpnp-revid.h>
 
+#ifdef CONFIG_LGE_DISPLAY_LABIBB_RECOVERY
+#include <linux/qpnp/power-on.h>
+#endif
+
 #ifdef CONFIG_LGE_LCD_POWER_CTRL
 #include <soc/qcom/lge/board_lge.h>
 #endif
@@ -1459,6 +1463,12 @@ static int qpnp_labibb_regulator_enable(struct qpnp_labibb *labibb)
 	return 0;
 err_out:
 	rc = qpnp_ibb_set_mode(labibb, IBB_SW_CONTROL_DIS);
+
+#ifdef CONFIG_LGE_DISPLAY_LABIBB_RECOVERY
+	pr_err("[Display] Issue happened in warm reset. Need cold reset.\n");
+	mdelay(10000);
+	do_msm_hard_reset();
+#endif
 	if (rc) {
 		pr_err("Unable to set IBB_MODULE_EN rc = %d\n", rc);
 		return rc;
@@ -2130,6 +2140,9 @@ static int register_qpnp_lab_regulator(struct qpnp_labibb *labibb,
 				rc);
 			return rc;
 		}
+#ifdef CONFIG_LGE_DISPLAY_LABIBB_RECOVERY
+		pr_err("[Display] LABIBB is not enabled in LK!!\n");
+#endif
 	} else {
 		rc = qpnp_labibb_read(labibb, &val,
 			labibb->lab_base + REG_LAB_LCD_AMOLED_SEL, 1);

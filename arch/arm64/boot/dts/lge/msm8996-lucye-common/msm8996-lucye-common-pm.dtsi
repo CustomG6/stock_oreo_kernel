@@ -575,6 +575,7 @@
 			"battery", "vzw_chg", "/sys/class/power_supply/lgcc/vzw_chg",
 			"battery", "battery_age", "/sys/class/power_supply/bms/battery_age",
 			"battery", "condition", "/sys/class/power_supply/battery/battery_condition",
+			"battery", "battery_age_level", "/sys/class/power_supply/bms/battery_age_level",
 			"battery", "time_to_full_now", "/sys/class/power_supply/battery/time_to_full_now",
 			"battery", "cycle", "/sys/class/power_supply/bms/battery_cycle",
 			"battery", "battery_type", "/sys/class/power_supply/bms/battery_type",

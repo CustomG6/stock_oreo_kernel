@@ -4094,34 +4094,32 @@ wl_android_set_miracast(struct net_device *dev, char *command, int total_len)
 			}
 		}
 // 171113, kyungckt.chung, Modify performance in Miracast/5G_MCC/BW_20M environment [E]
-// 171205, kyungckt.chung, Modify performance in Miracast/2.4G/Concurrent environment [S]
-		if(wl_cfg80211_need_increase_retry_limitation(dev)){
-			/* Increase lrl and srl to 15 */
-			val = 15;
-			config.iovar = NULL;
-			config.ioctl = WLC_GET_LRL;
-			config.arg = &val;
-			config.len = sizeof(int);
-			ret = wl_android_iolist_add(dev, &miracast_resume_list, &config);
-			if (ret) {
-				DHD_ERROR(("%s: Failed set lrl\n", __FUNCTION__));
-				goto resume;
-			}
+// 180115, kyungckt.chung, Tune SRL/LRL value for Miracast Session [S]
+        /* Increase lrl and srl to 15 */
+        val = 15;
+        config.iovar = NULL;
+        config.ioctl = WLC_GET_LRL;
+        config.arg = &val;
+        config.len = sizeof(int);
+        ret = wl_android_iolist_add(dev, &miracast_resume_list, &config);
+        if (ret) {
+            DHD_ERROR(("%s: Failed set lrl\n", __FUNCTION__));
+            goto resume;
+        }
 
-			val = 15;
-			config.iovar = NULL;
-			config.ioctl = WLC_GET_SRL;
-			config.arg = &val;
-			config.len = sizeof(int);
+        val = 15;
+        config.iovar = NULL;
+        config.ioctl = WLC_GET_SRL;
+        config.arg = &val;
+        config.len = sizeof(int);
 
-			ret = wl_android_iolist_add(dev, &miracast_resume_list, &config);
-			if (ret) {
-				DHD_ERROR(("%s: Failed set srl\n", __FUNCTION__));
-				goto resume;
-			}
+        ret = wl_android_iolist_add(dev, &miracast_resume_list, &config);
+        if (ret) {
+            DHD_ERROR(("%s: Failed set srl\n", __FUNCTION__));
+            goto resume;
+        }
 
-		}
-// 171205, kyungckt.chung, Modify performance in Miracast/2.4G/Concurrent environment [E]
+// 180115, kyungckt.chung, Tune SRL/LRL value for Miracast Session [E]
 
 #if defined(BCM4339_CHIP)
 		config.iovar = "phy_watchdog";

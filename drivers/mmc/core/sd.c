@@ -1191,6 +1191,8 @@ static void mmc_sd_detect(struct mmc_host *host)
 		return;
 	}
 
+	mmc_power_up(host, host->ocr_avail);
+
 	/*
 	 * Just check if our card has been removed.
 	 */
@@ -1220,6 +1222,8 @@ static void mmc_sd_detect(struct mmc_host *host)
 		} else {
 			printk(KERN_ERR "%s(%s): Re-init card success in mmc_sd_detect()\n",
 				__func__,mmc_hostname(host));
+			if (mmc_card_suspended(host->card))
+				mmc_card_clr_suspended(host->card);
 		}
 #else
 		printk(KERN_ERR "%s(%s): Unable to re-detect card (%d)\n",

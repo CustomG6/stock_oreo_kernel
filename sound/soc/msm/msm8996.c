@@ -2433,6 +2433,7 @@ static void *def_tasha_mbhc_cal(void)
 	}
 
 #define S(X, Y) ((WCD_MBHC_CAL_PLUG_TYPE_PTR(tasha_wcd_cal)->X) = (Y))
+	S(v_hs_max, 1500);
 #if defined(CONFIG_SND_SOC_ES9018)
 	S(v_hs_max, 2800);
 #elif defined(CONFIG_SND_SOC_ES9218P)
@@ -2440,8 +2441,6 @@ static void *def_tasha_mbhc_cal(void)
 		S(v_hs_max, 2800);
 		pr_info("%s: set v_hs_max as 2800 installed es9218p chip\n", __func__);
 	}
-#else
-	S(v_hs_max, 1500);
 #endif
 #undef S
 #define S(X, Y) ((WCD_MBHC_CAL_BTN_DET_PTR(tasha_wcd_cal)->X) = (Y))

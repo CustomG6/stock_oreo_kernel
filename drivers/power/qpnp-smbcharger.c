@@ -251,6 +251,9 @@ struct smbchg_chip {
 	bool				safety_timer_en;
 	bool				aicl_complete;
 	bool				usb_ov_det;
+#ifdef CONFIG_LGE_PM
+	bool				usb_status_lock_flag;
+#endif
 	bool				otg_pulse_skip_dis;
 	const char			*battery_type;
 	enum power_supply_type		usb_supply_type;
@@ -6384,8 +6387,14 @@ static void smbchg_hvdcp_det_prepare_work(struct work_struct *work)
 
 	pr_smb(PR_LGE, "start prepare hvdcp (%d)\n", chip->hvdcp_det_retry);
 
-	if (!is_usb_present(chip))
+	if (!is_usb_present(chip)){
+		pr_err(" lock_flag : %d\n",chip->usb_status_lock_flag);
+		if (chip->usb_status_lock_flag){
+			chip->usb_status_lock_flag = false;
+			goto handle_removal;
+		}
 		goto out;
+	}
 
 #ifdef CONFIG_LGE_USB_FACTORY
 	if (lge_get_boot_mode() == LGE_BOOT_MODE_QEM_56K ||
@@ -7246,7 +7255,15 @@ static void lge_cc_work_enable_check(struct work_struct *work)
 #endif
 void update_usb_status(struct smbchg_chip *chip, bool usb_present, bool force)
 {
+#ifdef CONFIG_LGE_PM
+	if(!mutex_trylock(&chip->usb_status_lock)){
+		chip->usb_status_lock_flag = true;
+		pr_err("update_usb_status already mutex lock status\n");
+		return;
+	}
+#else
 	mutex_lock(&chip->usb_status_lock);
+#endif
 	if (force) {
 		chip->usb_present = usb_present;
 		chip->usb_present ? handle_usb_insertion(chip)
@@ -9520,7 +9537,6 @@ static irqreturn_t usbin_ov_handler(int irq, void *_chip)
 		dev_err(chip->dev, "Couldn't read usb rt status rc = %d\n", rc);
 		goto out;
 	}
-
 	/* OV condition is detected. Notify it to USB psy */
 	if (reg & USBIN_OV_BIT) {
 		chip->usb_ov_det = true;
@@ -10054,8 +10070,10 @@ static void lgcc_charger_reginfo(struct work_struct *work) {
 #endif
 			case POWER_SUPPLY_TYPE_USB_DCP:
 				usb_type_name = "DCP";
+#ifdef CONFIG_LGE_PM_MAXIM_EVP_CONTROL
 				if (chip->is_evp_ta)
 					usb_type_name = "EVP";
+#endif
 				break;
 #ifdef CONFIG_LGE_USB_TYPE_C
 			case POWER_SUPPLY_TYPE_CTYPE:
@@ -12229,6 +12247,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 #ifdef CONFIG_LGE_PM
 	chip->hvdcp_uv_count = 0;
 	chip->hvdcp_uv_recovery = false;
+	chip->usb_status_lock_flag = false;
 #endif
 	dev_set_drvdata(&spmi->dev, chip);
 

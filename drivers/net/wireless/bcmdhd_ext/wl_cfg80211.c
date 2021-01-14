@@ -19886,53 +19886,5 @@ int wl_cfg80211_need_restrict_vsdb(struct net_device *dev)
 	}
 	return FALSE;
 }
-// 171113, kyungckt.chung@lge.com, Modify performance in Miracast/5G_MCC/BW_20M environment [E]
-// 171205, kyungckt.chung, Modify performance in Miracast/2.4G/Concurrent environment [S]
-int wl_cfg80211_need_increase_retry_limitation(struct net_device *dev)
-{
-	struct net_info *iter, *next;
-	struct net_device *p2p_ndev = NULL;
-	struct bcm_cfg80211 *cfg = g_bcm_cfg;
-	struct net_device *ndev = bcmcfg_to_prmry_ndev(cfg);
-	char *ifname_p2p = "p2p-wlan0-0";
-	u32 chspec;
-	int err;
-
-	/* Check concurrency situation */
-	if (!wl_get_drv_status(cfg, CONNECTED, ndev)) {
-		WL_INFORM(("%s: Not a concurrency situation\n", __FUNCTION__));
-		return FALSE;
-	}
-
-	/* Get CFG of P2P IF */
-	for_each_ndev(cfg, iter, next) {
-		if (iter->ndev) {
-			if (strcmp(iter->ndev->name, ifname_p2p) == 0) {
-				break;
-			}
-		}
-		WL_ERR(("%s: No P2P IF CFG Found\n", __FUNCTION__));
-		return FALSE;
-	}
-
-	p2p_ndev = iter->ndev;
-	if (!p2p_ndev) {
-		WL_ERR(("%s:p2p dev is NULL\n", __FUNCTION__));
-		return FALSE;
-	}
-
-	err = wldev_iovar_getint(p2p_ndev, "chanspec", &chspec);
-	if (unlikely(err)) {
-		WL_ERR(("%s: Get chanspec error (P2P) : %d \n", __FUNCTION__, err));
-		return FALSE;
-	}
-
-	if (CHSPEC_IS2G(chspec)) {
-		WL_INFORM(("%s: 2.4Ghz. Concurrent environment. Need to be increased!\n", __FUNCTION__));
-		return TRUE;
-	}
-	WL_INFORM(("%s: Not a 2.4G env. Doesn't need to be increased!\n", __FUNCTION__));
-	return FALSE;
-}
 #endif /* CUSTOMER_HW10 */
-// 171205, kyungckt.chung, Modify performance in Miracast/2.4G/Concurrent environment [E]
+// 171113, kyungckt.chung@lge.com, Modify performance in Miracast/5G_MCC/BW_20M environment [E]

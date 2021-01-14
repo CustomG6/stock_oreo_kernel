@@ -9570,6 +9570,7 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 #if defined(SHOW_LOGTRACE) && defined(LOGTRACE_FROM_FILE)
 	if (dhd_logtrace_from_file(dhd)) {
 		setbit(eventmask, WLC_E_TRACE);
+        dhd_msg_level |= DHD_MSGTRACE_VAL;
 	} else {
 		clrbit(eventmask, WLC_E_TRACE);
 	}
