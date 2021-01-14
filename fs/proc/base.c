@@ -104,9 +104,6 @@
  *	in /proc for a task before it execs a suid executable.
  */
 
-#ifdef CONFIG_HSWAP
-struct timespec ts;
-#endif
 struct pid_entry {
 	const char *name;
 	int len;
@@ -994,20 +991,28 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 
 #ifdef CONFIG_HSWAP
 	if (!task->signal->oom_score_adj) {
-		ts = current_kernel_time();
-		task->signal->top_time += ts.tv_sec - task->signal->before_time;
-		if (task->signal->reclaimed)
+		long diff_time;
+		long diff_time_ms;
+
+		diff_time = ((long)jiffies - (long)task->signal->before_time);
+		task->signal->top_time += diff_time;
+		diff_time_ms = diff_time * ((MSEC_PER_SEC) / HZ);
+		if (diff_time_ms > 3000) {
 			task->signal->reclaimed = 0;
+		}
+
+		/* quicksearchbox do not count on top activity */
+		if (diff_time_ms > 3000 && strncmp(task->comm, "earchbox:search", 15) == 0) {
+			task->signal->top_time -= diff_time;
+		}
 	}
 #endif
 
 	task->signal->oom_score_adj = (short)oom_score_adj;
 
 #ifdef CONFIG_HSWAP
-	if (!task->signal->oom_score_adj) {
-		ts = current_kernel_time();
-		task->signal->before_time = ts.tv_sec;
-	}
+	if (!task->signal->oom_score_adj)
+		task->signal->before_time = jiffies;
 #endif
 
 	if (has_capability_noaudit(current, CAP_SYS_RESOURCE))

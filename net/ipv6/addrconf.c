@@ -3391,10 +3391,8 @@ static void addrconf_dad_kick(struct inet6_ifaddr *ifp)
             printk("addrconf_dad_kick it's rmnet!\n");
             if(ifp && !dev_net(idev->dev)->ipv6.devconf_all->forwarding){
                 printk("addrconf_dad_kick forwarding disabled\n");
-                if(ipv6_addr_type(&(ifp->addr)) & IPV6_ADDR_LINKLOCAL){
-                    printk("addrconf_dad_kick rmnet linklocal case. set rand_num 0 !!\n");
+                    printk("addrconf_dad_kick rmnet case. set rand_num 0 !!\n");
                     rand_num = 0;
-                }
             }
         }
 #endif

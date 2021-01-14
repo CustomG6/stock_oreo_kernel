@@ -733,8 +733,8 @@ struct signal_struct {
 					 * Only settable by CAP_SYS_RESOURCE. */
 #ifdef CONFIG_HSWAP
 	short reclaimed;
-	long before_time;
 	long top_time;
+	unsigned long before_time;
 #endif
 
 	struct mutex cred_guard_mutex;	/* guard against foreign influences on
